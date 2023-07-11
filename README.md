@@ -14,7 +14,7 @@ RenderRater is a web app that renders a font using multiple renderers. It’s us
 * Inspect the renderings!
 * Download the renderings to inspect them in more detail (not yet).
 
-The project seeks to add additional renderers. If your favourite renderer can be built in JavaScript or WASM, then it is welcome to be added to RenderRater.
+The project seeks to add additional renderers. If your favourite renderer can be built in JavaScript or WASM, then it is welcome to be added to RenderRater. A [FreeType](https://freetype.org) renderer would be particularly welcome.
 
 ## Running RenderRater on your own server
 
