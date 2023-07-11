@@ -6,7 +6,7 @@ RenderRater is a web app that renders a font using multiple renderers. It’s us
 
 ## User guide
 
-* Select a font, or upload a font.
+* Select a font, or upload a font (font data does not leave the browser’s memory).
 * Adjust variation axes.
 * Type some text.
 * Adjust font size.
