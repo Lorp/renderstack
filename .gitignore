@@ -1,4 +1,3 @@
-.gitignore
 .DS_Store
 .parcel-cache/*
 .package-lock.json
