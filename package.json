@@ -1,0 +1,14 @@
+{
+  "name": "RenderRater",
+  "version": "1.0.0",
+  "author": "Laurence Penney <lorp@lorp.org>",
+  "homepage": "https://github.com/Lorp/renderrater/",
+  "description": "Render variable fonts using multiple rendering engines: the browser’s own, Samsa, Fontkit, Harfbuzz.",
+  "scripts": {
+  },
+  "dependencies": {
+    "samsa-font": "^2.0.0",
+    "harfbuzzjs": "^0.3.3",
+    "fontkit": "^2.0.0"
+  }
+}
