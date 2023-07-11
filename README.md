@@ -1,10 +1,8 @@
 # RenderRater
 
-**Try RenderRater now**
+[**Try RenderRater now**](https://lorp.github.io/renderrater/dist/)
 
-RenderRater is a web app that renders fonts using multiple renderers, primarily for the purpose of testing for visual differences in rendering and layout. It also serves as a demo of how to make these renderers work on the web.
-
-It currently supports [Samsa](https://github.com/Lorp/samsa), [Fontkit](https://github.com/foliojs/fontkit) and [Harfbuzz](https://github.com/harfbuzz/harfbuzz), displaying their renderings alongside the browser’s own rendering.
+RenderRater is a web app that renders a font using multiple renderers. It’s useful for finding visual differences in rendering and layout. It also serves to demonstrate how to make these renderers work on the web. Its font menu links to several open-source fonts, and it also allows drag & drop. It currently supports the renderers [Samsa](https://github.com/Lorp/samsa), [Fontkit](https://github.com/foliojs/fontkit) and [Harfbuzz](https://github.com/harfbuzz/harfbuzz), displaying their renderings alongside the browser’s own rendering.
 
 ## User guide
 
@@ -12,17 +10,48 @@ It currently supports [Samsa](https://github.com/Lorp/samsa), [Fontkit](https://
 * Adjust variation axes.
 * Type some text.
 * Adjust font size.
-* Adjust foreground colour.
-* Download renderings to inspect them in detail.
+* Adjust foreground colour (not yet).
+* Inspect the renderings!
+* Download the renderings to inspect them in more detail (not yet).
 
-which is immediately rendered not only by browser in the normal way, but also by Samsa, Fontkit and Harfbuzz.
+The project seeks to add additional renderers. If your favourite renderer can be built in JavaScript or WASM, then it is welcome to be added to RenderRater.
 
-The project is actively seeking to add additional renderers. If your favrouite renderer can be built in JavaScript or WASM, then it is welcome to be added to RenderRater.
+## Running RenderRater on your own server
 
-## Legal notice
+The repo includes a ready-to-run version of RenderRater in the `dist` folder. To run it on your own server:
 
-When using the upload feature, no font data is transferred beyond the browser.
+1. Clone the GitHub repository.
+2. Place the contents of the `dist` folder somewhere on your server.
+3. Go to it!
 
+## Building RenderRater
+
+To develop RenderRater, or even to edit the default list of fonts, you will need to build it. We use [Parcel](https://parceljs.org) to bundle all the code into a single file, and the following instructions assume this:
+
+1. Install [node and npm](https://nodejs.org/en/download).
+2. Install [parcel](https://parceljs.org).
+3. Clone the GitHub repository.
+4. cd to the project folder.
+5. Run `npm install` to install dependencies.
+6. Run `npx parcel build src/index.html` to build the project.
+
+Note that Samsa and Harfbuzz.js are not currently available via npm, so they are included already in node_modules.
+
+## Renderer comparisons
+
+| Renderer         | kB   | Variations | OTL | COLRv0 | COLRv1 | avar2 |
+|---               |---   |----        |---  |---     |---    |--- |
+| Safari           | –    | ✓          | ✓   | ✓      | ✗     | ✓  |
+| Chrome (macOS)   | –    | ✓          | ✓   | ✓      | ✓     | ✓  |
+| Chrome (Windows) | –    | ✓          | ✓   | ✓      | ✓     | ✗  |
+| Samsa            | 46¹  | ✓          | ✗   | ✓      | ✓     | ✓  |
+| Fontkit          | 353¹ | ✓          | ✓   | ✗      | ✗     | ✗  |
+| Harfbuzz         | 355² | ✓          | ✓   | ✗      | ✗³    | ✓  |
+
+
+¹ kB is measured after minification by [swc](https://swc.rs)  
+² This is the size of `hb.wasm`, compiled with support for avar2 and COLRv1.  
+³ Although Harfbuzz parses the COLRv1 paint tables, JS bindings for hbjs.js have yet to be written.
 
 
 ## Implementation notes
@@ -35,35 +64,24 @@ Uses Samsa Core v2, a major update on Samsa Core v1. Samsa Core v2 includes hand
 * COLRv1 (partial)
 * basic layout
 
-The Samsa library uses 46 kB (minified).
-
 ### Fontkit
 
-The Fontkit library uses 353 kB (minified).
+> *Fontkit is an advanced font engine for Node and the browser, used by PDFKit. It supports many font formats, advanced glyph substitution and layout features, glyph path extraction, color emoji glyphs, font subsetting, and more.*
+
+— From the [Fontkit GitHub repo](https://github.com/foliojs/fontkit)
+
 
 ### Harfbuzz 
 
-Harfbuzz
-Harfbuzz.js
+> *HarfBuzz is a text-shaping engine. If you give HarfBuzz a font and a string containing a sequence of Unicode codepoints, HarfBuzz selects and positions the corresponding glyphs from the font, applying all of the necessary layout rules and font features. HarfBuzz then returns the string to you in the form that is correctly arranged for the language and writing system. HarfBuzz can properly shape all of the world's major writing systems. It runs on all major operating systems and software platforms and it supports the major font formats in use today.*
 
-Building a custom Harfbuzz.
-
-The Samsa WASM uses 355 kB.
-
-## How to build RenderRater
+— From [What is Harfbuzz?](https://harfbuzz.github.io/what-is-harfbuzz.html)
 
 
+Note that Harfbuzz is not primarily designed for font rendering, but offers SVG-compatible primitives so that glyphs can be displayed as well as laid out. More commonly, Harfbuzz is used by a text library to transform a string of text into a set of glyph IDs and positions, where a renderer such as FreeType generates the glyph images, and the text library positions them using the glyph positions provided by Harfbuzz.
 
-## Renderer comparisons
+### Building hb.wasm
 
-| Renderer         | kB  | Variations | OTL | COLRv0 | COLRv1 | avar2 |
-|---               |---  |----        |---  |---     |---    |--- |
-| Safari           | –   | ✓          | ✓   | ✓      | ✗     | ✓  |
-| Chrome (macOS)   | –   | ✓          | ✓   | ✓      | ✓     | ✓  |
-| Chrome (Windows) | –   | ✓          | ✓   | ✓      | ✓     | ✗  |
-| Samsa            | 46  | ✓          | ✗   | ✓      | ✓     | ✓  |
-| Fontkit          | 353 | ✓          | ✓   | ✗      | ✗     | ✗  |
-| Harfbuzz         | 355 | ✓          | ✓   | ✗      | ✗     | ✓  |
+You may want to update the WebAssembly (Wasm) version of Harfbuzz, for example to try variable components or other new features in development. To do this, clone the Harfbuzz repo, tune Harfbuzz compiler flags, and build a new `hb.wasm`.
 
 
-\* Minifications performed using [swc](https://swc.rs)
