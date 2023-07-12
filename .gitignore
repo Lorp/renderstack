@@ -1,7 +1,0 @@
-.gitignore
-.DS_Store
-.parcel-cache/*
-.package-lock.json
-node_modules/.bin/*
-node_modules/*
-package-lock.json
