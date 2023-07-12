@@ -262,7 +262,7 @@ $ npx parcel build index.html --no-cache
 				const svgPreamble = `<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="2000" viewBox="0 0 2000 2000">`;
 				const svgPostamble = `</svg>`;
 				const scale = fontSize/upem;
-				const gPreamble = `<g transform="scale(${scale} ${-scale}),translate(0 ${-upem})">`;
+				const gPreamble = `<g transform="scale(${scale} ${-scale}) translate(0 ${-upem})">`;
 				const gPostamble = `</g>`;
 				renderDiv.innerHTML = svgPreamble + (defs ? `<defs>${defs}</defs>` : "") + gPreamble + innerSVGComposition + gPostamble + svgPostamble; // build and insert final SVG
 				break;
