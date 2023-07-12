@@ -20,9 +20,9 @@ The project seeks to add additional renderers. If your favourite renderer can be
 
 The repo includes a ready-to-run version of RenderRater in the `dist` folder. To run it on your own server:
 
-1. Clone the GitHub repository.
+1. Clone this GitHub repository.
 2. Place the contents of the `dist` folder somewhere on your server.
-3. Go to it!
+3. With a browser, visit the `dist` folder on your server.
 
 ## Building RenderRater
 
@@ -30,12 +30,14 @@ To develop RenderRater, or even to edit the default list of fonts, you will need
 
 1. Install [node and npm](https://nodejs.org/en/download).
 2. Install [parcel](https://parceljs.org).
-3. Clone the GitHub repository.
-4. cd to the project folder.
+3. Clone this GitHub repository.
+4. `cd` to the project folder.
 5. Run `npm install` to install dependencies.
 6. Run `npx parcel build src/index.html` to build the project.
 
-Note that Samsa and Harfbuzz.js are not currently available via npm, so they are included already in node_modules.
+Notes:
+* Samsa and Harfbuzz.js are not currently available via npm, so they are included already in node_modules
+* Parcel uses [SWC](https://swc.rs) to minify the code
 
 ## Renderer comparisons
 
@@ -49,7 +51,7 @@ Note that Samsa and Harfbuzz.js are not currently available via npm, so they are
 | Harfbuzz         | 355² | ✓          | ✓   | ✗      | ✗³    | ✓  |
 
 
-¹ measured after minification by [swc](https://swc.rs)  
+¹ measured after minification by SWC
 ² this is the size of `hb.wasm`, compiled with support for avar2 and COLRv1  
 ³ although Harfbuzz parses the COLRv1 paint tables, JS bindings for hbjs.js have yet to be written
 
