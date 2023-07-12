@@ -37,9 +37,10 @@ $ npx parcel build index.html --no-cache
 	<div id="container">
 	<div id="left-column">
 		<select id="font-selector" />
-		<input type="file" id="font-drop" />
-		<input type="text" id="text-input" value="Qadhesion!"/>
-		<input type="text" id="size-input" value="144"/>
+		<input type="file" id="font-drop" /><br>
+		Text <input type="text" id="text-input" value="Qadhesion!"/><br>
+		Size <input type="text" id="size-input" value="144"/><br>
+		Color <input type="color" id="color-input" value="#000000"/> Opacity <input type="range" id="opacity-input" min="0" max="1" step="any" value="1"/><br>
 
 		<div id="buttons">
 			<button id="reset">Reset</button>
@@ -57,7 +58,7 @@ $ npx parcel build index.html --no-cache
 
 <script type="module">
 
-	// libraries
+	// load libraries
 	const fontkit = require("fontkit");
 	import {SamsaFont, SamsaInstance, SamsaBuffer} from "samsa-font";
 	const hbjs = require("harfbuzzjs");
@@ -138,8 +139,10 @@ $ npx parcel build index.html --no-cache
 
 	function setupControls () {
 
-		document.querySelector("#text-input").oninput = textOrSizeChanged;
-		document.querySelector("#size-input").oninput = textOrSizeChanged;
+		document.querySelector("#text-input").oninput = textOrSizeOrColorChanged;
+		document.querySelector("#size-input").oninput = textOrSizeOrColorChanged;
+		document.querySelector("#color-input").oninput = textOrSizeOrColorChanged;
+		document.querySelector("#opacity-input").oninput = textOrSizeOrColorChanged;
 
 		const axesDiv = document.getElementById("axes");
 		axesDiv.innerHTML = "";
@@ -188,7 +191,7 @@ $ npx parcel build index.html --no-cache
 		GLOBAL.renders.forEach(render => updateRender(render) ); // update the renders
 	}
 
-	function textOrSizeChanged(e) {
+	function textOrSizeOrColorChanged(e) {
 		GLOBAL.renders.forEach(render => updateRender(render) ); // update the renders
 	}
 
@@ -217,28 +220,32 @@ $ npx parcel build index.html --no-cache
 		const renderDiv = document.querySelector(`.render.${render}`);
 		const fontSize = parseFloat(document.querySelector("#size-input").value);
 		const text = document.querySelector("#text-input").value;
+		const color = document.querySelector("#color-input").value;
+		const opacity = document.querySelector("#opacity-input").value;
+		const colorU32 = GLOBAL.samsaFont.u32FromHexColor(color, opacity);
 
 		switch (render) {
 			case "system": {
 				renderDiv.innerHTML = text;
 				renderDiv.style.fontSize = fontSize + "px";
 				renderDiv.style.fontVariationSettings = axisSettings(true); // get the string version of font-variation-settings
+				renderDiv.style.color = color;
+				renderDiv.style.opacity = opacity;
 				break;
 			}
 
 			case "samsa-svg": {
 				const font = GLOBAL.samsaFont;
-				const tuple = font.fvsToTuple(axisSettings());
+				const tuple = font.tupleFromFvs(axisSettings());
 				const myInstance = new SamsaInstance(font, tuple);
 				const layout = myInstance.glyphLayoutFromString(text);
-
-				console.log()
 				const upem = font.head.unitsPerEm;
 				const context = {
 					font: font,
 					instance: myInstance,
 					paths: [],
 					gradients: {},
+					color: colorU32,
 				};
 
 				let innerSVGComposition = "";
@@ -247,7 +254,7 @@ $ npx parcel build index.html --no-cache
 					glyph.instantiate(myInstance); 
 					let iglyph = myInstance.glyphs[layoutItem.id];
 					let thisSVG = iglyph.svg(context); // this gets the best possible COLR glyph, with monochrome fallback
-					thisSVG = `<g transform="translate(${layoutItem.ax} 0)">` + thisSVG + "</g>"; // ignore y offsets in horizontal layout
+					thisSVG = `<g transform="translate(${layoutItem.ax} 0)" fill="${GLOBAL.samsaFont.hexColorFromU32(colorU32)}">` + thisSVG + "</g>"; // ignore y offsets in horizontal layout; we recalc the color since we need to embed the opacity
 					innerSVGComposition += thisSVG;					
 				});
 
@@ -271,6 +278,28 @@ $ npx parcel build index.html --no-cache
 				}
 
 				renderDiv.innerHTML = svgPreamble + (defs ? `<defs>${defs}</defs>` : "") + gPreamble + innerSVGComposition + gPostamble + svgPostamble;
+
+				/*
+				// make lots of instances to test performance
+				console.time("Many instances")
+				let start = font.fvar.axes[0].minValue;
+				let end = font.fvar.axes[0].maxValue;
+				let num=0;
+				for (let val=start; val<=end; val++) {
+					const tuple = font.tupleFromFvs({wght: val});
+					const myI = new SamsaInstance(font, tuple);
+					for (let g=0; g<font.maxp.numGlyphs; g++) {
+						const glyph = font.glyphs[g];
+						const iglyph = glyph.instantiate(myI);
+						const svg = iglyph.svg();
+					}
+
+					num++;
+				}
+				console.timeEnd("Many instances");
+				console.log(`Created ${num} instances`);
+				*/
+
 				break;
 			}
  
@@ -278,7 +307,7 @@ $ npx parcel build index.html --no-cache
 
 				// fetch the drawing commands
 				const font = GLOBAL.samsaFont;
-				const tuple = font.fvsToTuple(axisSettings());
+				const tuple = font.tupleFromFvs(axisSettings());
 				const myInstance = new SamsaInstance(font, tuple);
 				const layout = myInstance.glyphLayoutFromString(text);
 				const upem = font.head.unitsPerEm;
