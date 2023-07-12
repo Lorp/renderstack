@@ -243,7 +243,7 @@ $ npx parcel build index.html --no-cache
 				const context = {
 					font: font,
 					instance: myInstance,
-					paths: [],
+					paths: {},
 					gradients: {},
 					color: colorU32,
 				};
@@ -258,48 +258,13 @@ $ npx parcel build index.html --no-cache
 					innerSVGComposition += thisSVG;					
 				});
 
+				const defs = Object.values(context.paths).join("") + Object.values(context.gradients).join(""); // build defs: this is way faster than other methods such as sparse arrays
 				const svgPreamble = `<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="2000" viewBox="0 0 2000 2000">`;
 				const svgPostamble = `</svg>`;
 				const scale = fontSize/upem;
 				const gPreamble = `<g transform="scale(${scale} ${-scale}),translate(0 ${-upem})">`;
 				const gPostamble = `</g>`;
-
-				// build defs section
-				let defs = "";
-				if (context.paths.length > 0) { // add each glyph outline used in the text run
-					context.paths.forEach(path => {
-						defs += path;
-					});
-				}
-				if (Object.keys(context.gradients).length > 0) { // add each gradient used in the text run
-					Object.keys(context.gradients).forEach(key => {
-						defs += context.gradients[key];
-					});
-				}
-
-				renderDiv.innerHTML = svgPreamble + (defs ? `<defs>${defs}</defs>` : "") + gPreamble + innerSVGComposition + gPostamble + svgPostamble;
-
-				/*
-				// make lots of instances to test performance
-				console.time("Many instances")
-				let start = font.fvar.axes[0].minValue;
-				let end = font.fvar.axes[0].maxValue;
-				let num=0;
-				for (let val=start; val<=end; val++) {
-					const tuple = font.tupleFromFvs({wght: val});
-					const myI = new SamsaInstance(font, tuple);
-					for (let g=0; g<font.maxp.numGlyphs; g++) {
-						const glyph = font.glyphs[g];
-						const iglyph = glyph.instantiate(myI);
-						const svg = iglyph.svg();
-					}
-
-					num++;
-				}
-				console.timeEnd("Many instances");
-				console.log(`Created ${num} instances`);
-				*/
-
+				renderDiv.innerHTML = svgPreamble + (defs ? `<defs>${defs}</defs>` : "") + gPreamble + innerSVGComposition + gPostamble + svgPostamble; // build and insert final SVG
 				break;
 			}
  
@@ -469,6 +434,46 @@ $ npx parcel build index.html --no-cache
 			loadFont(arrayBuffer);
 		});
 	});
+
+	// array time test	
+	const arr1 = new Array(10000000);
+	arr1[500000] = `<path id="1"/>`;
+	arr1[801001] = `<path id="2"/>`;
+	console.time("A");
+	const str1 = arr1.join("");
+	console.timeEnd("A");
+	console.log(str1);
+
+	const arr2 = new Array(10000000);
+	arr2[500000] = `<path id="1"/>`;
+	arr2[801001] = `<path id="2"/>`;
+	console.time("B");
+	let str2 = "";
+	arr2.forEach(item => {
+		str2 += item;
+	})
+	console.timeEnd("B");
+	console.log(str2);
+
+	const obj1 = {};
+	obj1.g500000 = `<path id="1"/>`;
+	obj1.g801001 = `<path id="2"/>`;
+	let str3 = "";
+	console.time("C");
+	Object.keys(obj1).forEach(key => {
+		str3 += obj1[key];
+	})
+	console.timeEnd("C");
+	console.log(str3);
+
+	const obj2 = {};
+	obj2.g500000 = `<path id="1"/>`;
+	obj2.g801001 = `<path id="2"/>`;
+	//let str4 = "";
+	console.time("D");
+	const str4 = Object.values(obj2).join("");
+	console.timeEnd("D");
+	console.log(str4);
 
 
 </script>

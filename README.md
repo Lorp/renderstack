@@ -64,6 +64,8 @@ Uses Samsa Core v2, a major update on Samsa Core v1. Samsa Core v2 includes hand
 * COLRv1 (partial)
 * basic layout
 
+Samsa Core v2 is in development, and is not currently available on npm, nor in the [Samsa repo](https://github.com/Lorp/samsa) itself.
+
 ### Fontkit
 
 > *Fontkit is an advanced font engine for Node and the browser, used by PDFKit. It supports many font formats, advanced glyph substitution and layout features, glyph path extraction, color emoji glyphs, font subsetting, and more.*
