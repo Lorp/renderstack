@@ -2,7 +2,7 @@
 
 [**Try RenderRater now**](https://lorp.github.io/renderrater/dist/)
 
-RenderRater is a web app that renders a font using multiple renderers. It’s useful for finding visual differences in rendering and layout. It also serves to demonstrate how to make these renderers work on the web. Its font menu links to several open-source fonts, and it also allows drag & drop. It currently supports the renderers [Samsa](https://github.com/Lorp/samsa), [Fontkit](https://github.com/foliojs/fontkit) and [Harfbuzz](https://github.com/harfbuzz/harfbuzz), displaying their renderings alongside the browser’s own rendering.
+RenderRater is a web app that renders a font using multiple renderers. It’s useful for finding visual differences in rendering and layout. It also demonstrates how to make each renderer work on the web. Its font menu links to several open-source fonts, and it also allows drag & drop. [Samsa](https://github.com/Lorp/samsa), [Fontkit](https://github.com/foliojs/fontkit) and [Harfbuzz](https://github.com/harfbuzz/harfbuzz) are currently supported. Their renderings appear alongside the browser’s own rendering.
 
 ## User guide
 
@@ -49,9 +49,9 @@ Note that Samsa and Harfbuzz.js are not currently available via npm, so they are
 | Harfbuzz         | 355² | ✓          | ✓   | ✗      | ✗³    | ✓  |
 
 
-¹ kB is measured after minification by [swc](https://swc.rs)  
-² This is the size of `hb.wasm`, compiled with support for avar2 and COLRv1.  
-³ Although Harfbuzz parses the COLRv1 paint tables, JS bindings for hbjs.js have yet to be written.
+¹ measured after minification by [swc](https://swc.rs)  
+² this is the size of `hb.wasm`, compiled with support for avar2 and COLRv1  
+³ although Harfbuzz parses the COLRv1 paint tables, JS bindings for hbjs.js have yet to be written
 
 
 ## Implementation notes
