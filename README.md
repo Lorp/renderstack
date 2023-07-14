@@ -1,8 +1,8 @@
-# RenderRater
+# RenderStack
 
-[**Try RenderRater now**](https://lorp.github.io/renderrater/dist/)
+[**Try RenderStack now**](https://lorp.github.io/renderstack/dist/)
 
-RenderRater is a web app that renders a font using multiple renderers. It’s useful for finding visual differences in rendering and layout. It also demonstrates how to make each renderer work on the web. Its font menu links to several open-source fonts, and it also allows drag & drop. [Samsa](https://github.com/Lorp/samsa), [Fontkit](https://github.com/foliojs/fontkit) and [Harfbuzz](https://github.com/harfbuzz/harfbuzz) are currently supported. Their renderings appear alongside the browser’s own rendering.
+RenderStack is a web app that renders a font using multiple renderers. It’s useful for finding visual differences in rendering and layout. It also demonstrates how to make each renderer work on the web. Its font menu links to several open-source fonts, and it also allows drag & drop. [Samsa](https://github.com/Lorp/samsa), [Fontkit](https://github.com/foliojs/fontkit) and [Harfbuzz](https://github.com/harfbuzz/harfbuzz) are currently supported. Their renderings appear alongside the browser’s own rendering.
 
 ## User guide
 
@@ -14,19 +14,19 @@ RenderRater is a web app that renders a font using multiple renderers. It’s us
 * Inspect the renderings!
 * Download the renderings to inspect them in more detail (not yet).
 
-The project seeks to add additional renderers. If your favourite renderer can be built in JavaScript or WASM, then it is welcome to be added to RenderRater. A [FreeType](https://freetype.org) renderer would be particularly welcome.
+The project seeks to add additional renderers. If your favourite renderer can be built in JavaScript or WASM, then it is welcome to be added to RenderStack. A [FreeType](https://freetype.org) renderer would be particularly welcome.
 
-## Running RenderRater on your own server
+## Running RenderStack on your own server
 
-The repo includes a ready-to-run version of RenderRater in the `dist` folder. To run it on your own server:
+The repo includes a ready-to-run version of RenderStack in the `dist` folder. To run it on your own server:
 
 1. Clone this GitHub repository.
 2. Place the contents of the `dist` folder somewhere on your server.
 3. With a browser, visit the `dist` folder on your server.
 
-## Building RenderRater
+## Building RenderStack
 
-To develop RenderRater, or even to edit the default list of fonts, you will need to build it. We use [Parcel](https://parceljs.org) to bundle all the code into a single file, and the following instructions assume this:
+To develop RenderStack, or even to edit the default list of fonts, you will need to build it. We use [Parcel](https://parceljs.org) to bundle all the code into a single file, and the following instructions assume this:
 
 1. Install [node and npm](https://nodejs.org/en/download).
 2. Install [parcel](https://parceljs.org).
