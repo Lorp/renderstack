@@ -33,11 +33,12 @@ To develop RenderStack, or even to edit the default list of fonts, you will need
 3. Clone this GitHub repository.
 4. `cd` to the project folder.
 5. Run `npm install` to install dependencies.
-6. Run `npx parcel build src/index.html` to build the project.
+6. Run `npm run build` to build the project.
 
 Notes:
 * Samsa and Harfbuzz.js are not currently available via npm, so they are included already in node_modules
 * Parcel uses [SWC](https://swc.rs) to minify the code
+* The command `npm run build` runs the `build` script in `package.json`. This copies the `fonts` folder and `hb.wasm` from `src` to `dist`, and runs Parcel.
 
 ## Renderer comparisons
 
