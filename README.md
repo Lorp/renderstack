@@ -29,7 +29,7 @@ The repo includes a ready-to-run version of RenderStack in the `dist` folder. To
 To develop RenderStack, or even to edit the default list of fonts, you will need to build it. We use [Parcel](https://parceljs.org) to bundle all the code into a single file, and the following instructions assume this:
 
 1. Install [node and npm](https://nodejs.org/en/download).
-2. Install [parcel](https://parceljs.org).
+2. Install [Parcel](https://parceljs.org).
 3. Clone this GitHub repository.
 4. `cd` to the project folder.
 5. Run `npm install` to install dependencies.
@@ -52,7 +52,7 @@ Notes:
 | Harfbuzz         | 355² | ✓          | ✓   | ✗      | ✗³    | ✓  |
 
 
-¹ measured after minification by SWC
+¹ measured after minification by SWC  
 ² this is the size of `hb.wasm`, compiled with support for avar2 and COLRv1  
 ³ although Harfbuzz parses the COLRv1 paint tables, JS bindings for hbjs.js have yet to be written
 
