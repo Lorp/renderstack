@@ -82,11 +82,10 @@ Samsa Core v2 is in development, and is not currently available on npm, nor in t
 
 — From [What is Harfbuzz?](https://harfbuzz.github.io/what-is-harfbuzz.html)
 
+Harfbuzz is able to work on the web thanks to [Harfbuzz.js](https://github.com/harfbuzz/harfbuzzjs). This provides a WebAssembly binary, `hb.wasm` and a JavaScript wrapper, `hbjs.js`. The JS file is bundled into the RenderStack code, and the Wasm file is copied to the `dist` folder during the build process.
 
 Note that Harfbuzz is not primarily designed for font rendering, but offers SVG-compatible primitives so that glyphs can be displayed as well as laid out. More commonly, Harfbuzz is used by a text library to transform a string of text into a set of glyph IDs and positions, where a renderer such as FreeType generates the glyph images, and the text library positions them using the glyph positions provided by Harfbuzz.
 
-### Building hb.wasm
+#### Building hb.wasm
 
-You may want to update the WebAssembly (Wasm) version of Harfbuzz, for example to try variable components or other new features in development. To do this, clone the Harfbuzz repo, tune Harfbuzz compiler flags, and build a new `hb.wasm`.
-
-
+You may want to update the WebAssembly version of Harfbuzz, for example to try variable components or other optional features. To do this, clone the [Harfbuzz.js](https://github.com/harfbuzz/harfbuzzjs) and [Harfbuzz](https://github.com/harfbuzz/harfbuzz) repos, tune Harfbuzz compiler flags, and build a new `hb.wasm` using the `build.sh` script.
