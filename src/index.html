@@ -223,6 +223,7 @@ $ npx parcel build index.html --no-cache
 		const color = document.querySelector("#color-input").value;
 		const opacity = document.querySelector("#opacity-input").value;
 		const colorU32 = GLOBAL.samsaFont.u32FromHexColor(color, opacity);
+		renderDiv.innerHTML = "";
 
 		switch (render) {
 			case "system": {
@@ -293,7 +294,6 @@ $ npx parcel build index.html --no-cache
 					const iglyph = myInstance.glyphs[layoutItem.id];
 					iglyph.canvasGlyphMonochrome(ctx);
 					ctx.translate(layoutItem.dx, 0); // ignore y offsets in horizontal layout
-
 				});
 				renderDiv.innerHTML = "";
 				renderDiv.append(canvas);
@@ -303,7 +303,7 @@ $ npx parcel build index.html --no-cache
 			case "fontkit": {
 
 				const font = GLOBAL.fontkitFont;
-				const ifont = font.getVariation(axisSettings());
+				const ifont = font.fvar ? font.getVariation(axisSettings()) : font; // getVariation() fails on non-variable fonts
 				const upem = font.unitsPerEm;
 				const run = ifont.layout(text);
 				const svgPaths = [];
