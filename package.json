@@ -5,6 +5,7 @@
   "homepage": "https://github.com/Lorp/renderrater/",
   "description": "Render variable fonts using multiple rendering engines: the browser’s own, Samsa, Fontkit, Harfbuzz.",
   "scripts": {
+    "build": "mkdir -p dist/fonts && cp src/fonts/* dist/fonts && cp src/hb.wasm dist && npx parcel build src/index.html --no-cache --public-url '.'"
   },
   "dependencies": {
     "samsa-font": "^2.0.0",
