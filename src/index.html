@@ -275,18 +275,23 @@ $ npm run build
  
 			case "samsa-canvas": {
 
+				const width = 2000;
+				const height = 2000;
+
 				// fetch the drawing commands
 				const font = GLOBAL.samsaFont;
 				const tuple = font.tupleFromFvs(axisSettings());
 				const myInstance = new SamsaInstance(font, tuple);
 				const layout = myInstance.glyphLayoutFromString(text);
 				const upem = font.head.unitsPerEm;
-				const scale = fontSize/upem;
+				const scale = fontSize/upem * window.devicePixelRatio;
 
 				// create a new canvas each time
 				const canvas = document.createElement("canvas");
-				canvas.width = 2000;
-				canvas.height = 2000;
+				canvas.style.width = `${width}px`;
+				canvas.style.height = `${height}px`;
+				canvas.width = width * window.devicePixelRatio;
+				canvas.height = height * window.devicePixelRatio;
 				const ctx = canvas.getContext("2d");
 				ctx.fillStyle = "black";
 				ctx.scale(scale, -scale);
