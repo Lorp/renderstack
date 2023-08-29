@@ -2,7 +2,7 @@
 
 [**Try RenderStack now**](https://lorp.github.io/renderstack/dist/)
 
-RenderStack is a web app that renders a font using multiple renderers. It’s useful for finding visual differences in rendering and layout. It also demonstrates how to make each renderer work on the web. Its font menu links to several open-source fonts, and it also allows drag & drop. [Samsa](https://github.com/Lorp/samsa), [Fontkit](https://github.com/foliojs/fontkit) and [Harfbuzz](https://github.com/harfbuzz/harfbuzz) are currently supported. Their renderings appear alongside the browser’s own rendering.
+RenderStack is a web app that renders a font using multiple renderers. It’s useful for finding visual differences in rendering and layout. It also demonstrates how to make each renderer work on the web. Its font menu links to several open-source fonts, and it also allows drag & drop. [Samsa](https://github.com/Lorp/samsa-core), [Fontkit](https://github.com/foliojs/fontkit) and [Harfbuzz](https://github.com/harfbuzz/harfbuzz) are currently supported. Their renderings appear alongside the browser’s own rendering.
 
 ## User guide
 
@@ -61,13 +61,13 @@ Notes:
 
 ### Samsa
 
-Uses Samsa Core v2, a major update on Samsa Core v1. Samsa Core v2 includes handling for:
+Uses [Samsa Core v2](https://github.com/Lorp/samsa-core), a major update on [Samsa Core v1](https://github.com/Lorp/samsa). Samsa Core v2 includes handling for:
 
 * avar version 2
 * COLRv1 (partial)
 * basic layout
 
-Samsa Core v2 is in development, and is not currently available on npm, nor in the [Samsa repo](https://github.com/Lorp/samsa) itself.
+When it’s ready, Samsa Core will be made available via npm.
 
 ### Fontkit
 
