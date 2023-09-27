@@ -8,8 +8,12 @@
     "build": "cp src/hb.wasm dist && npx parcel build src/index.html --no-cache --public-url '.'"
   },
   "dependencies": {
-    "samsa-font": "^2.0.0",
+    "fontkit": "^2.0.0",
     "harfbuzzjs": "^0.3.3",
-    "fontkit": "^2.0.0"
+    "samsa-core": "^2.0.0"
+  },
+  "devDependencies": {
+    "path-browserify": "^1.0.1",
+    "process": "^0.11.10"
   }
 }

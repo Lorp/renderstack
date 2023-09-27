@@ -11,9 +11,11 @@ $ npm run build
 
 -->
 <html lang="en">
+
 <head>
 	<meta charset="UTF-8">
 	<title>RenderStack</title>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 	<style>
 
 #container {
@@ -30,9 +32,16 @@ $ npm run build
 	background: lightgrey;
 }
 
+.material-symbols-outlined {
+	font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+	cursor: default;
+}
+
 	</style>
 
 </head>
+
+
 
 <body>
 
@@ -64,8 +73,8 @@ $ npm run build
 
 	// load libraries
 	const fontkit = require("fontkit");
-	import {SamsaFont, SamsaInstance, SamsaBuffer} from "samsa-font";
-	const hbjs = require("harfbuzzjs");
+	import {SamsaFont, SamsaInstance, SamsaBuffer} from "../node_modules/samsa-core/src/samsa-core.js";
+	import hbjs from "../node_modules/harfbuzzjs/hbjs.js";
 
 	// load harfbuzz wasm
 	async function init() {
@@ -222,6 +231,7 @@ $ npm run build
 	function updateRender(render) {
 
 		const renderDiv = document.querySelector(`.render.${render}`);
+		const renderTitleDiv = document.querySelector(`.render-title.${render}`);
 		const fontSize = parseFloat(document.querySelector("#size-input").value);
 		const text = document.querySelector("#text-input").value;
 		const color = document.querySelector("#color-input").value;
@@ -241,17 +251,22 @@ $ npm run build
 
 			case "samsa-svg": {
 				const font = GLOBAL.samsaFont;
+				console.log("font", font)
 				const tuple = font.tupleFromFvs(axisSettings());
+				console.log("tuple", tuple)
 				const myInstance = new SamsaInstance(font, tuple);
+				console.log("myInstance", myInstance)
 				const layout = myInstance.glyphLayoutFromString(text);
+				console.log("layout", layout)
 				const upem = font.head.unitsPerEm;
+				console.log("upem", upem)
 				const context = {
 					font: font,
 					instance: myInstance,
-					paths: {},
-					gradients: {},
+					defs: {},
 					color: colorU32,
 				};
+				console.log("context", context)
 
 				let innerSVGComposition = "";
 				layout.forEach(layoutItem => {
@@ -263,13 +278,18 @@ $ npm run build
 					innerSVGComposition += thisSVG;					
 				});
 
-				const defs = Object.values(context.paths).join("") + Object.values(context.gradients).join(""); // build defs: this is way faster than other methods such as sparse arrays
+				const defs = Object.values(context.defs).join(""); // build defs: this is way faster than other methods such as sparse arrays
 				const svgPreamble = `<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="2000" viewBox="0 0 2000 2000">`;
 				const svgPostamble = `</svg>`;
 				const scale = fontSize/upem;
 				const gPreamble = `<g transform="scale(${scale} ${-scale}) translate(0 ${-upem})">`;
 				const gPostamble = `</g>`;
-				renderDiv.innerHTML = svgPreamble + (defs ? `<defs>${defs}</defs>` : "") + gPreamble + innerSVGComposition + gPostamble + svgPostamble; // build and insert final SVG
+				const svgFinal = svgPreamble + (defs ? `<defs>${defs}</defs>` : "") + gPreamble + innerSVGComposition + gPostamble + svgPostamble; // build final SVG
+				renderDiv.innerHTML = svgFinal; // insert final SVG
+
+				// update byte-count
+				const byteCountDiv = renderTitleDiv.querySelector(".byte-count");
+				byteCountDiv.innerText = svgFinal.length + " bytes";
 				break;
 			}
  
@@ -389,7 +409,88 @@ $ npm run build
 			}
 		}
 	}
+
+	function exportRender(e) {
+		//alert ("Copied SVG to clipboard");
+		const renderTitle = e.target.closest(".render-title");
+		if (renderTitle) {
+			let message;
+			if (renderTitle.classList.contains("samsa-svg")) {
+				const svg = renderTitle.nextElementSibling.querySelector("svg"); 
+				const svgString = new XMLSerializer().serializeToString(svg);
+				switch (e.target.innerText) {
+					case "content_copy":
+						navigator.clipboard.writeText(svgString);
+						message = "Copied SVG to clipboard";
+						break;
+
+					case "download":
+						message = "Downloaded SVG to ‘renderstack.svg’";
+						const fauxLink = document.createElement("a");
+						fauxLink.download = "renderstack.svg";
+						fauxLink.href = "data:image/svg+xml;base64," + btoa(svgString);
+						document.body.append(fauxLink); // needed for Firefox, not Chrome or Safari
+						fauxLink.click();
+						fauxLink.remove();
+						break;
+
+					case "terminal":
+						console.log(svgString);
+						message = "Wrote SVG to console";
+						break;
+
+					default:
+						message = "no action performed";
+						break;
+				}
+
+			}
+
+			else if (renderTitle.classList.contains("samsa-canvas")) {
+
+				const render = document.querySelector(".render.samsa-canvas");
+				if (e.target.innerText == "download") {
+					message = "Downloaded PNG from HTML canvas as ‘renderstack.png’";
+
+					console.log ("getting png from canvas");
+
+					// get png from html canvas
+					const canvas = render.querySelector("canvas");
+					const pngString = canvas.toDataURL("image/png");
+
+					const fauxLink = document.createElement("a");
+					fauxLink.download = "renderstack.png";
+					//fauxLink.href = "data:image/png;base64," + btoa(pngString);
+					//fauxLink.href = "data:image/png;base64," + pngString;
+					fauxLink.href = pngString;
+
+
+					document.body.append(fauxLink); // needed for Firefox, not Chrome or Safari
+					fauxLink.click();
+					fauxLink.remove();
+				}
+
+			}
+
+			alert (message);
+
+			
+
+		//console.log (renderTitle);
+		//console.log ("render");
+			//const svg = render.querySelector("svg");
+		}
+	}
 	
+	function download(e) {
+
+		// if (renderMode == "samsa-svg") {
+
+			
+		// }
+
+	}
+
 	// main starts here
 	const GLOBAL = {};
 	GLOBAL.options = {
@@ -401,16 +502,18 @@ $ npm run build
 	// setup the font selector
 	const fontSelectorOptions = {
 		"Select a font…":       -1,
-		"Amstelval-avar2":  "https://www.axis-praxis.org/samsa/fonts/avar2/Amstelvar-avar2.ttf",
-		"Bitter":           "https://raw.githubusercontent.com/google/fonts/main/ofl/bitter/Bitter%5Bwght%5D.ttf",
-		"Bitter-Italic":    "https://raw.githubusercontent.com/google/fonts/main/ofl/bitter/Bitter-Italic%5Bwght%5D.ttf",
-		"BlakaInk":         "https://raw.githubusercontent.com/google/fonts/main/ofl/blakaink/BlakaInk-Regular.ttf",
-		"BungeeColor":      "https://raw.githubusercontent.com/google/fonts/main/ofl/bungeecolor/BungeeColor-Regular.ttf",
-		"BungeeSpice":      "https://raw.githubusercontent.com/google/fonts/main/ofl/bungeespice/BungeeSpice-Regular.ttf",
-		"Foldit":           "https://raw.githubusercontent.com/google/fonts/main/ofl/foldit/Foldit%5Bwght%5D.ttf",
-		"Nabla":            "https://raw.githubusercontent.com/google/fonts/main/ofl/nabla/Nabla%5BEDPT%2CEHLT%5D.ttf",
-		"RobotoFlex-avar2": "https://www.axis-praxis.org/samsa/fonts/avar2/RobotoFlex-avar2.ttf",
-		"Rocher":           "https://www.axis-praxis.org/samsa/fonts/RocherColorGX.ttf",
+		"Amstelval-avar2":	"https://www.axis-praxis.org/samsa/fonts/avar2/Amstelvar-avar2.ttf",
+		"Bitter":			"https://raw.githubusercontent.com/google/fonts/main/ofl/bitter/Bitter%5Bwght%5D.ttf",
+		"Bitter-Italic":	"https://raw.githubusercontent.com/google/fonts/main/ofl/bitter/Bitter-Italic%5Bwght%5D.ttf",
+		"BlakaInk":			"https://raw.githubusercontent.com/google/fonts/main/ofl/blakaink/BlakaInk-Regular.ttf",
+		"BungeeColor":		"https://raw.githubusercontent.com/google/fonts/main/ofl/bungeecolor/BungeeColor-Regular.ttf",
+		"BungeeSpice":		"https://raw.githubusercontent.com/google/fonts/main/ofl/bungeespice/BungeeSpice-Regular.ttf",
+		"Foldit":			"https://raw.githubusercontent.com/google/fonts/main/ofl/foldit/Foldit%5Bwght%5D.ttf",
+		"Nabla":			"https://raw.githubusercontent.com/google/fonts/main/ofl/nabla/Nabla%5BEDPT%2CEHLT%5D.ttf",
+		"Noto Color Emoji":	"https://www.axis-praxis.org/samsa/fonts/COLRv1/NotoColorEmoji-NO-SVG.ttf",
+		"RobotoFlex-avar2":	"https://www.axis-praxis.org/samsa/fonts/avar2/RobotoFlex-avar2.ttf",
+		"Rocher":			"https://www.axis-praxis.org/samsa/fonts/RocherColorGX.ttf",
+		"Dominik Test":		"https://www.axis-praxis.org/samsa/fonts/COLRv1/test_glyphs-glyf_colr_1_variable.ttf",		
 	};
 	const fontSelector = document.querySelector("#font-selector");
 	Object.keys(fontSelectorOptions).forEach(key => {
@@ -420,6 +523,7 @@ $ npm run build
 		fontSelector.append(option);
 	});
 	fontSelector.addEventListener("change", () => loadFont(fontSelector.value) );
+	document.querySelector("#text-input").value = "Qadhesion!";
 
 	// set up the renders, each with its own div
 	GLOBAL.renders = ["system","samsa-svg","samsa-canvas","fontkit","harfbuzz"];
@@ -427,10 +531,47 @@ $ npm run build
 		const renderTitle = document.createElement("div");
 		const renderDiv = document.createElement("div");
 		renderTitle.classList.add("render-title");
+		renderTitle.classList.add(render);
 		renderTitle.innerHTML = render;
 		renderDiv.classList.add("render");
 		renderDiv.classList.add(render);
-		document.querySelector("#renders").append(renderTitle, renderDiv)
+		document.querySelector("#renders").append(renderTitle, renderDiv);
+
+		// download and copy buttons
+		if (render === "samsa-svg") {
+			const iconCopy = document.createElement("div");
+			iconCopy.classList.add("material-symbols-outlined");
+			iconCopy.title = "copy to clipboard";
+			iconCopy.innerText = "content_copy";
+
+			const iconDownload = document.createElement("div");
+			iconDownload.classList.add("material-symbols-outlined");
+			iconDownload.title = "download";
+			iconDownload.innerText = "download";
+
+			const iconOutput = document.createElement("div");
+			iconOutput.classList.add("material-symbols-outlined");
+			iconOutput.title = "output to console";
+			iconOutput.innerText = "terminal";
+
+			const byteCount = document.createElement("span");
+			byteCount.classList.add("byte-count");
+
+			renderTitle.append(iconCopy, iconDownload, iconOutput, byteCount);
+
+			iconCopy.onclick = iconDownload.onclick = iconOutput.onclick = exportRender;
+			// iconDownload.addEventListener("click", exportRender);
+			// iconOutput.addEventListener("click", exportRender);
+		}
+
+		if (render === "samsa-canvas") {
+			const iconDownload = document.createElement("div");
+			iconDownload.classList.add("material-symbols-outlined");
+			iconDownload.title = "download";
+			iconDownload.innerText = "download";
+			renderTitle.append(iconDownload);
+			iconDownload.onclick = exportRender;
+		}
 	});
 
 	// initialize wasm, then load a font
