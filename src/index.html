@@ -100,10 +100,23 @@ $ npm run build
 		let arrayBuffer;
 		if (fontPath instanceof ArrayBuffer) {
 			arrayBuffer = fontPath;
+			console.log("arrayBuffer")
 		}
 		else {
+			console.log("path")
 			const response = await fetch(fontPath);
+			console.log(response);
 			arrayBuffer = await response.arrayBuffer();
+		}
+
+		// check first 4 bytes
+		const magic = new SamsaBuffer(arrayBuffer, 0, 4);
+		const fingerprint = magic.u32;
+		console.log(arrayBuffer);
+		//alert (`fingerprint = ${tag}`);
+		if (fingerprint === 0x774f4632) { // "wOF2" == 0x774f4632
+			alert ("This is a wOFF2 font. Please convert it to a TTF or OTF font first.");
+			return;
 		}
 
 		// try fontkit
@@ -237,6 +250,7 @@ $ npm run build
 		const color = document.querySelector("#color-input").value;
 		const opacity = document.querySelector("#opacity-input").value;
 		const colorU32 = GLOBAL.samsaFont.u32FromHexColor(color, opacity);
+		const instance = GLOBAL.samsaFont.instance(axisSettings());
 		renderDiv.innerHTML = "";
 
 		switch (render) {
@@ -250,42 +264,10 @@ $ npm run build
 			}
 
 			case "samsa-svg": {
-				const font = GLOBAL.samsaFont;
-				console.log("font", font)
-				const tuple = font.tupleFromFvs(axisSettings());
-				console.log("tuple", tuple)
-				const myInstance = new SamsaInstance(font, tuple);
-				console.log("myInstance", myInstance)
-				const layout = myInstance.glyphLayoutFromString(text);
-				console.log("layout", layout)
-				const upem = font.head.unitsPerEm;
-				console.log("upem", upem)
-				const context = {
-					font: font,
-					instance: myInstance,
-					defs: {},
-					color: colorU32,
-				};
-				console.log("context", context)
 
-				let innerSVGComposition = "";
-				layout.forEach(layoutItem => {
-					const glyph = font.glyphs[layoutItem.id];
-					glyph.instantiate(myInstance); 
-					let iglyph = myInstance.glyphs[layoutItem.id];
-					let thisSVG = iglyph.svg(context); // this gets the best possible COLR glyph, with monochrome fallback
-					thisSVG = `<g transform="translate(${layoutItem.ax} 0)" fill="${GLOBAL.samsaFont.hexColorFromU32(colorU32)}">` + thisSVG + "</g>"; // ignore y offsets in horizontal layout; we recalc the color since we need to embed the opacity
-					innerSVGComposition += thisSVG;					
-				});
-
-				const defs = Object.values(context.defs).join(""); // build defs: this is way faster than other methods such as sparse arrays
-				const svgPreamble = `<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="2000" viewBox="0 0 2000 2000">`;
-				const svgPostamble = `</svg>`;
-				const scale = fontSize/upem;
-				const gPreamble = `<g transform="scale(${scale} ${-scale}) translate(0 ${-upem})">`;
-				const gPostamble = `</g>`;
-				const svgFinal = svgPreamble + (defs ? `<defs>${defs}</defs>` : "") + gPreamble + innerSVGComposition + gPostamble + svgPostamble; // build final SVG
-				renderDiv.innerHTML = svgFinal; // insert final SVG
+				//const svgFinal = GLOBAL.samsaFont.renderText({ text: text, fvs: axisSettings(), fontSize: fontSize });
+				const svgFinal = instance.renderText({ text: text, fontSize: fontSize });
+				renderDiv.innerHTML = svgFinal;
 
 				// update byte-count
 				const byteCountDiv = renderTitleDiv.querySelector(".byte-count");
@@ -301,7 +283,8 @@ $ npm run build
 				// fetch the drawing commands
 				const font = GLOBAL.samsaFont;
 				const tuple = font.tupleFromFvs(axisSettings());
-				const myInstance = new SamsaInstance(font, tuple);
+				//const myInstance = new SamsaInstance(font, tuple);
+				const myInstance = font.instance(axisSettings());
 				const layout = myInstance.glyphLayoutFromString(text);
 				const upem = font.head.unitsPerEm;
 				const scale = fontSize/upem * window.devicePixelRatio;
@@ -510,10 +493,10 @@ $ npm run build
 		"BungeeSpice":		"https://raw.githubusercontent.com/google/fonts/main/ofl/bungeespice/BungeeSpice-Regular.ttf",
 		"Foldit":			"https://raw.githubusercontent.com/google/fonts/main/ofl/foldit/Foldit%5Bwght%5D.ttf",
 		"Nabla":			"https://raw.githubusercontent.com/google/fonts/main/ofl/nabla/Nabla%5BEDPT%2CEHLT%5D.ttf",
-		"Noto Color Emoji":	"https://www.axis-praxis.org/samsa/fonts/COLRv1/NotoColorEmoji-NO-SVG.ttf",
+		"Noto Color Emoji":	"https://www.axis-praxis.org/samsa/fonts/figma//NotoColorEmoji-NO-SVG.ttf",
 		"RobotoFlex-avar2":	"https://www.axis-praxis.org/samsa/fonts/avar2/RobotoFlex-avar2.ttf",
-		"Rocher":			"https://www.axis-praxis.org/samsa/fonts/RocherColorGX.ttf",
-		"Dominik Test":		"https://www.axis-praxis.org/samsa/fonts/COLRv1/test_glyphs-glyf_colr_1_variable.ttf",		
+		"Rocher":			"https://www.axis-praxis.org/samsa/fonts/figma/RocherColorGX.ttf",
+		"Dominik Test":		"https://www.axis-praxis.org/samsa/fonts/figma/test_glyphs-glyf_colr_1_variable.ttf",		
 	};
 	const fontSelector = document.querySelector("#font-selector");
 	Object.keys(fontSelectorOptions).forEach(key => {
