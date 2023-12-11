@@ -4720,7 +4720,7 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 
 						if (r+1 < layout.length) { // we need a next glyph to have a pair to work with
 							const gNext = layout[r+1].id;
-							let pairValueRecord;
+							let pair;
 
 							// get pairValueRecord, either from format 1 or format 2
 							if (subtable.format === 1) {
@@ -4728,7 +4728,7 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 								if (pairSet) {
 									for (let i=0; i<pairSet.length; i++) {
 										if (pairSet[i].secondGlyph === gNext) {
-											pairValueRecord = pairSet[i];
+											pair = pairSet[i].pair;
 											break;
 										}
 									}	
@@ -4738,21 +4738,22 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 								// find the pairValueRecord for this class pair
 								const class1 = findClassForGlyph(g, subtable.classDef1);
 								const class2 = findClassForGlyph(gNext, subtable.classDef2);
-								pairValueRecord = subtable.pairValueRecords[class1][class2];
+								pair = subtable.pairValueRecords[class1][class2];
 							}
 
 							// what shall we do about it?
-							if (pairValueRecord) {
+							if (pair) {
 								// handle adjustments specified in pairValueRecord[0]
 								// - adjusts positions of the current glyph and subsequent glyphs, maybe the input format should be simpler so we calculate absolute positions at the end?
-								if (pairValueRecord[0] !== null) {
-									const metrics0 = [ pairValueRecord[0][0], pairValueRecord[0][1], pairValueRecord[0][2], pairValueRecord[0][3] ];
-									//const metrics1 = [ pairValueRecord[1][0], pairValueRecord[1][1], pairValueRecord[1][2], pairValueRecord[1][3] ];
+								if (pair[0] !== null) {
+
+									const metrics0 = [ pair[0][0], pair[0][1], pair[0][2], pair[0][3] ]; // take the first 4 (of 8) items
+									//const metrics1 = [ pair[1][0], pair[1][1], pair[1][2], pair[1][3] ];
 
 									// add variation deltas if they exist
 									if (this.deltaSets["GDEF"]) {
 										for (let m=0; m<4; m++) {
-											const variationIndexOffset = pairValueRecord[0][4+m];
+											const variationIndexOffset = pair[0][4+m];
 											if (variationIndexOffset) {
 												buf.seek(subtable.offset + variationIndexOffset);
 												const outer = buf.u16, inner = buf.u16, deltaFormat = buf.u16; // read variationIndex
@@ -4777,8 +4778,8 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 									}
 								}
 
-								// TODO: handle adjustments specified in pairValueRecord[1]
-								if (pairValueRecord[1] !== null) {
+								// TODO: handle adjustments specified in pair[1]
+								if (pair[1] !== null) {
 									// do stuff here
 								}
 							}
