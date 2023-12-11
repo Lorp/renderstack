@@ -936,7 +936,7 @@ const TABLE_DECODERS = {
 				gdef.markGlyphSetsDefOffset = buf.u16;
 			}
 			if (gdef.version[1] >= 3) {
-				gdef.itemVarStoreOffset = buf.u32;
+				gdef.itemVariationStoreOffset = buf.u32; // we use this key, rather that in the spec, so that it will get picked up by the ItemVariationStore decoder along with those of MVAR, HVAR, etc.
 			}
 		}
 	},
@@ -3540,7 +3540,7 @@ function SamsaFont(buf, options = {}) {
 	});
 
 	// load ItemVariationStores
-	const ivsTags = ["avar", "MVAR", "HVAR", "VVAR", "COLR"];
+	const ivsTags = ["avar", "MVAR", "HVAR", "VVAR", "COLR", "GDEF" ];
 	ivsTags.forEach(tag => {
 		if (this[tag] && this[tag].itemVariationStoreOffset) { // if itemVariationStoreOffset == 0 (legitimate at least in avar), do nothing
 			buf.seek(this.tables[tag].offset + this[tag].itemVariationStoreOffset);
@@ -4431,12 +4431,10 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 			case 2: {
 				for (let r=0; r<classDef.classRanges.length; r++) {
 					const range = classDef.classRanges[r];
-					const [startGlyphID, endGlyphID] = range; // don’t assign class yet, as in general it’s not needed
-					if (g > endGlyphID) {
-						continue;
-					}
-					else if (g >= startGlyphID) {
-						classId = range[2]; // only assign this at the last moment
+					if (g <= range[1]) { // if g <= endGlyphID
+						if (g >= range[0]) { // if g >= startGlyphID
+							classId = range[2]; // classId = class
+						}
 						break;
 					}
 				}
@@ -4448,8 +4446,10 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 
 	function decodeSubtable(lookupType) {
 
-		const subtableOffset = buf.tell();
-		let subtable = { format: buf.u16 };
+		let subtable = {
+			offset: buf.tell(),
+			format: buf.u16,
+		};
 
 		switch (lookupType) {
 
@@ -4458,10 +4458,13 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 				const coverageOffset = buf.u16;
 				const valueFormat = buf.u16;
 
+				// SinglePosFormat1: Single Adjustment Positioning Format 1: Single Positioning Value
 				if (subtable.format === 1) {
 					subtable.valueRecord = decodeValueRecord(valueFormat);
 
 				}
+
+				// SinglePosFormat2: Single Adjustment Positioning Format 2: Array of Positioning Values
 				else if (subtable.format === 2) {
 					subtable.valueRecords = [];
 					const valueRecordCount = buf.u16;
@@ -4473,7 +4476,7 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 					console.log("Error: unknown subtable format")
 				}
 
-				buf.seek(subtableOffset + coverageOffset);
+				buf.seek(subtable.offset + coverageOffset);
 				subtable.coverage = buf.decodeCoverage();
 				break;
 			}
@@ -4486,11 +4489,12 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 
 				switch (subtable.format) {
 
+					// PairPosFormat1: Pair Adjustment Positioning Format 1: Adjustments for Glyph Pairs
 					case 1: {
 						const pairSetOffsets = buf.u16pascalArray();
 						subtable.pairSets = [];
 						pairSetOffsets.forEach(offset => {
-							buf.seek(subtableOffset + offset);
+							buf.seek(subtable.offset + offset);
 							const pairSet = [];
 							const pairValueCount = buf.u16;
 							for (let i=0; i<pairValueCount; i++) {
@@ -4504,6 +4508,7 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 						break;
 					}
 					
+					// PairPosFormat2: Pair Adjustment Positioning Format 2: Class Pair Adjustment
 					case 2: {
 						const classDef1Offset = buf.u16;
 						const classDef2Offset = buf.u16;
@@ -4516,9 +4521,9 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 								subtable.pairValueRecords[c1][c2] = [ decodeValueRecord(valueFormat1), decodeValueRecord(valueFormat2) ];
 							}
 						}
-						buf.seek(subtableOffset + classDef1Offset);
+						buf.seek(subtable.offset + classDef1Offset);
 						subtable.classDef1 = decodeClassDef();
-						buf.seek(subtableOffset + classDef2Offset);
+						buf.seek(subtable.offset + classDef2Offset);
 						subtable.classDef2 = decodeClassDef();
 						break;
 					}
@@ -4528,7 +4533,7 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 						break;
 					}
 				}
-				buf.seek(subtableOffset + coverageOffset);
+				buf.seek(subtable.offset + coverageOffset);
 				subtable.coverage = buf.decodeCoverage();
 				break;
 			}
@@ -4536,7 +4541,7 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 			// Lookup Type 3: Cursive Attachment Positioning Subtable
 			case 3: {
 				const coverageOffset = buf.u16;
-				buf.seek(subtableOffset + coverageOffset);
+				buf.seek(subtable.offset + coverageOffset);
 				subtable.coverage = buf.decodeCoverage();
 				break;
 			}
@@ -4548,9 +4553,9 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 				const markClassCount = buf.u16;
 				const markArrayOffset = buf.u16;
 				const baseArrayOffset = buf.u16;
-				buf.seek(subtableOffset + markCoverageOffset);
+				buf.seek(subtable.offset + markCoverageOffset);
 				subtable.markCoverage = buf.decodeCoverage();
-				buf.seek(subtableOffset + baseCoverageOffset);
+				buf.seek(subtable.offset + baseCoverageOffset);
 				subtable.baseCoverage = buf.decodeCoverage();
 				break;
 			}
@@ -4581,7 +4586,7 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 					const extensionLookupType = buf.u16;
 					const extensionOffset = buf.u32;				
 					if (extensionLookupType !== 9) { // type 9 cannot reference type 9
-						buf.seek(subtableOffset + extensionOffset);
+						buf.seek(subtable.offset + extensionOffset);
 						subtable = decodeSubtable(extensionLookupType);
 						subtable.extensionLookupType = extensionLookupType;	
 					}
@@ -4650,8 +4655,8 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 		locl: 1,
 		mark: 1,
 		mkmk: 1,
-		rlig: 1,
 		rclt: 1,
+		rlig: 1,
 	};
 
 	// add any requested features that are not in the default feature groups to final group, and remove any that are explicitly turned off
@@ -4738,25 +4743,36 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 
 							// what shall we do about it?
 							if (pairValueRecord) {
-
-								// TODO: handle variations... here?
-
-								// YAY! initial GPOS working for Type 2 lookups
-
 								// handle adjustments specified in pairValueRecord[0]
 								// - adjusts positions of the current glyph and subsequent glyphs, maybe the input format should be simpler so we calculate absolute positions at the end?
 								if (pairValueRecord[0] !== null) {
-									layoutItem.ax += pairValueRecord[0][0]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
-									layoutItem.ay += pairValueRecord[0][1]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
+									const metrics0 = [ pairValueRecord[0][0], pairValueRecord[0][1], pairValueRecord[0][2], pairValueRecord[0][3] ];
+									//const metrics1 = [ pairValueRecord[1][0], pairValueRecord[1][1], pairValueRecord[1][2], pairValueRecord[1][3] ];
+
+									// add variation deltas if they exist
+									if (this.deltaSets["GDEF"]) {
+										for (let m=0; m<4; m++) {
+											const variationIndexOffset = pairValueRecord[0][4+m];
+											if (variationIndexOffset) {
+												buf.seek(subtable.offset + variationIndexOffset);
+												const outer = buf.u16, inner = buf.u16, deltaFormat = buf.u16; // read variationIndex
+												if (deltaFormat === 0x8000) {
+													metrics0[m] += this.deltaSets["GDEF"][outer][inner];
+												}
+											}
+										}
+									}
+									layoutItem.ax += metrics0[0]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
+									layoutItem.ay += metrics0[1]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
 
 									// if the current glyph’s advance has changed, we move all *subsequent* glyphs by the change
 									// - this is inefficient, we need to just edit glyphs on their own
-									if (pairValueRecord[0][2] || pairValueRecord[0][3]) {
-										layoutItem.dx += pairValueRecord[0][2];
-										layoutItem.dy += pairValueRecord[0][3];
+									if (metrics0[2] || metrics0[3]) {
+										layoutItem.dx += metrics0[2];
+										layoutItem.dy += metrics0[3];
 										for (let r_ = r+1; r_ < layout.length; r_++) {
-											layout[r_].ax += pairValueRecord[0][2];
-											layout[r_].ay += pairValueRecord[0][3];
+											layout[r_].ax += metrics0[2];
+											layout[r_].ay += metrics0[3];
 										}
 									}
 								}
