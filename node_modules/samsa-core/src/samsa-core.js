@@ -4697,33 +4697,37 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 			lookup.type = lookup.subtables[0].extensionLookupType; // all extension subtables have the same lookup type
 		}
 
+
 		// go thru the glyphs in the glyph run for this lookupList
 		for (let r=0; r < layout.length; r++) { // note that we modify in the loop: r, run, run.length
 			
 			const layoutItem = layout[r];
 			const g = layoutItem.id;
 
-			lookup.subtables.forEach(subtable => {
+			// from https://fontforge.org/docs/ui/dialogs/lookups.html
+			// "Within a lookup, the subtables will be applied in order until one of them actually does something. Then no further subtables will be executed.
+			//  Note that this is different from the way lookups behave – all active lookups will always be applied, but only one subtable in a lookup will be."
 
-				let coverageIndex = -1;
-				if (subtable.coverage) {
-					coverageIndex = coverageIndexForGlyph(subtable.coverage, g); // is glyph g covered by this subtable?
+			// process all subtables until we find a pair or we run out of subtables
+			let found; // do we have an action to do?
+			for (let s=0; s<lookup.subtables.length && !found; s++) {
+				const subtable = lookup.subtables[s];
+
+				// Single adjustment
+				if (lookup.type == 1) {
 				}
-				if (coverageIndex !== -1) { // g was found
 
-					// Single adjustment
-					if (lookup.type == 1) {
-					}
+				// Pair adjustment
+				else if (lookup.type == 2) {
 
-					// Pair adjustment
-					else if (lookup.type == 2) {
+					let pair;
+					if (r+1 < layout.length) { // we need a next glyph to have a pair to work with
+						const gNext = layout[r+1].id;
 
-						if (r+1 < layout.length) { // we need a next glyph to have a pair to work with
-							const gNext = layout[r+1].id;
-							let pair;
-
-							// get pairValueRecord, either from format 1 or format 2
-							if (subtable.format === 1) {
+						// get pairValueRecord, either from format 1 or format 2
+						if (subtable.format === 1) {
+							const coverageIndex = coverageIndexForGlyph(subtable.coverage, g); // is glyph g covered by this subtable?
+							if (coverageIndex !== -1) {
 								const pairSet = subtable.pairSets[coverageIndex];
 								if (pairSet) {
 									for (let i=0; i<pairSet.length; i++) {
@@ -4732,98 +4736,96 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 											break;
 										}
 									}	
-								}
+								}	
 							}
-							else if (subtable.format === 2) {
-								// find the pairValueRecord for this class pair
-								const class1 = findClassForGlyph(g, subtable.classDef1);
-								const class2 = findClassForGlyph(gNext, subtable.classDef2);
-								pair = subtable.pairValueRecords[class1][class2];
-							}
+						}
+						else if (subtable.format === 2) {
+							// find the pairValueRecord for this class pair
+							const class1 = findClassForGlyph(g, subtable.classDef1);
+							const class2 = findClassForGlyph(gNext, subtable.classDef2);
+							pair = subtable.pairValueRecords[class1][class2];
+						}
 
-							// what shall we do about it?
-							if (pair) {
-								// handle adjustments specified in pairValueRecord[0]
-								// - adjusts positions of the current glyph and subsequent glyphs, maybe the input format should be simpler so we calculate absolute positions at the end?
-								if (pair[0] !== null) {
+						// what shall we do about it?
+						if (pair) {
+							// handle adjustments specified in pairValueRecord[0]
+							// - adjusts positions of the current glyph and subsequent glyphs, maybe the input format should be simpler so we calculate absolute positions at the end?
+							if (pair[0]) {
 
-									const metrics0 = [ pair[0][0], pair[0][1], pair[0][2], pair[0][3] ]; // take the first 4 (of 8) items
-									//const metrics1 = [ pair[1][0], pair[1][1], pair[1][2], pair[1][3] ];
+								const metrics0 = [ pair[0][0], pair[0][1], pair[0][2], pair[0][3] ]; // take the first 4 (of 8) items
+								//const metrics1 = [ pair[1][0], pair[1][1], pair[1][2], pair[1][3] ];
 
-									// add variation deltas if they exist
-									if (this.deltaSets["GDEF"]) {
-										for (let m=0; m<4; m++) {
-											const variationIndexOffset = pair[0][4+m];
-											if (variationIndexOffset) {
-												buf.seek(subtable.offset + variationIndexOffset);
-												const outer = buf.u16, inner = buf.u16, deltaFormat = buf.u16; // read variationIndex
-												if (deltaFormat === 0x8000) {
-													metrics0[m] += this.deltaSets["GDEF"][outer][inner];
-												}
+								// add variation deltas if they exist
+								if (this.deltaSets["GDEF"]) {
+									for (let m=0; m<4; m++) {
+										const variationIndexOffset = pair[0][4+m];
+										if (variationIndexOffset) {
+											buf.seek(subtable.offset + variationIndexOffset);
+											const outer = buf.u16, inner = buf.u16, deltaFormat = buf.u16; // read variationIndex
+											if (deltaFormat === 0x8000) {
+												metrics0[m] += this.deltaSets["GDEF"][outer][inner];
 											}
 										}
 									}
-									layoutItem.ax += metrics0[0]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
-									layoutItem.ay += metrics0[1]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
+								}
+								layoutItem.ax += metrics0[0]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
+								layoutItem.ay += metrics0[1]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
 
-									// if the current glyph’s advance has changed, we move all *subsequent* glyphs by the change
-									// - this is inefficient, we need to just edit glyphs on their own
-									if (metrics0[2] || metrics0[3]) {
-										layoutItem.dx += metrics0[2];
-										layoutItem.dy += metrics0[3];
-										for (let r_ = r+1; r_ < layout.length; r_++) {
-											layout[r_].ax += metrics0[2];
-											layout[r_].ay += metrics0[3];
-										}
+								// if the current glyph’s advance has changed, we move all *subsequent* glyphs by the change
+								// - this is inefficient, we need to just edit glyphs on their own
+								if (metrics0[2] || metrics0[3]) {
+									layoutItem.dx += metrics0[2];
+									layoutItem.dy += metrics0[3];
+									for (let r_ = r+1; r_ < layout.length; r_++) {
+										layout[r_].ax += metrics0[2];
+										layout[r_].ay += metrics0[3];
 									}
 								}
-
-								// TODO: handle adjustments specified in pair[1]
-								if (pair[1] !== null) {
-									// do stuff here
-								}
 							}
+
+							// TODO: handle adjustments specified in pair[1]
+							if (pair[1]) {
+								// do stuff here
+							}
+
+							// we can quit the loop
+							found = true;
 						}
 					}
-
-					// Cursive attachment
-					else if (lookup.type == 3) {
-						console.log("We are at type 3");
-					}
-
-					// MarkToBase attachment
-					else if (lookup.type == 4) {
-						console.log("We are at type 4");
-					}
-
-					// MarkToLigature attachment
-					else if (lookup.type == 5) {
-						console.log("We are at type 5");
-					}
-
-					// MarkToMark attachment
-					else if (lookup.type == 6) {
-						console.log("We are at type 6");
-					}
-
-					// Context positioning	Position one or more glyphs in context
-					else if (lookup.type == 7) {
-						console.log("We are at type 7");
-					}
-
-					// Chained Context positioning
-					else if (lookup.type == 8) {
-						console.log("We are at type 8");
-					}
-
 				}
 
-			});
+				// Cursive attachment
+				else if (lookup.type == 3) {
+					// console.log("We are at type 3");
+				}
 
+				// MarkToBase attachment
+				else if (lookup.type == 4) {
+					// console.log("We are at type 4");
+				}
+
+				// MarkToLigature attachment
+				else if (lookup.type == 5) {
+					// console.log("We are at type 5");
+				}
+
+				// MarkToMark attachment
+				else if (lookup.type == 6) {
+					// console.log("We are at type 6");
+				}
+
+				// Context positioning	Position one or more glyphs in context
+				else if (lookup.type == 7) {
+					// console.log("We are at type 7");
+				}
+
+				// Chained Context positioning
+				else if (lookup.type == 8) {
+					// console.log("We are at type 8");
+				}
+			}
 		}
-
 	});
-
 
 	return layout;
 }
