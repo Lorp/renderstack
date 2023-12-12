@@ -4307,10 +4307,11 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 			
 			const g = run[r];
 			
-			// check for coverage
-			for (let lo=0; lo<lookup.subtables.length; lo++) {
+			// go thru all subtables until we find one that does something for this glyph, or we run out of subtables
+			let found = false;
+			for (let s=0; s<lookup.subtables.length && !found; s++) {
 
-				const subtable = lookup.subtables[lo];
+				const subtable = lookup.subtables[s];
 
 				// only handle lookup types 1 to 4 for the time being
 				if (lookup.type <= 4) {
@@ -4327,6 +4328,7 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 							else if (subtable.format == 2) {
 								run[r] = subtable.substituteGlyphIDs[coverageIndex];  // mutate the run
 							}
+							found = true;
 						}
 
 						// Type 2: multiple substitution
@@ -4335,6 +4337,7 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 							const seq = subtable.sequences[coverageIndex];
 							run.splice(r, 1, ...seq); // splice in an array (note that we are replacing one glyph)
 							r += seq.length - 1; // -1 because we are replacing one glyph (e.g. if the substitition sequence is length=1, then r is already pointing at the correct place)
+							found = true;
 						}
 
 						// Type 3: alternate substitution
@@ -4361,6 +4364,7 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 										if (d === seq.length) { // did we find a ligature?
 											// YES: mutate the run! Note that r does not need to be corrected: in "office", r=1 before the "ffi" ligature substitution, and r=1 (correctly) after the ligature substitution, so next glyph will be "c"
 											run.splice(r, seq.length+1, lig.ligatureGlyph); // splice the ligature glyphID into the array, replacing seq.length+1 items at position r (note that r is soon incremented by 1 as usual)
+											found = true;
 											break; // success: we can break out of the for loop // TODO: do we need to break out of the lookup subtables loop too?
 										}
 									}
@@ -4697,7 +4701,6 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 			lookup.type = lookup.subtables[0].extensionLookupType; // all extension subtables have the same lookup type
 		}
 
-
 		// go thru the glyphs in the glyph run for this lookupList
 		for (let r=0; r < layout.length; r++) { // note that we modify in the loop: r, run, run.length
 			
@@ -4709,88 +4712,89 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 			//  Note that this is different from the way lookups behave – all active lookups will always be applied, but only one subtable in a lookup will be."
 
 			// process all subtables until we find a pair or we run out of subtables
-			let found; // do we have an action to do?
+			let found = false;
 			for (let s=0; s<lookup.subtables.length && !found; s++) {
 				const subtable = lookup.subtables[s];
 
 				// Single adjustment
 				if (lookup.type == 1) {
+					// TODO
 				}
 
 				// Pair adjustment
 				else if (lookup.type == 2) {
 
+					if (r+1 >= layout.length) { // we need a next glyph to have a pair to work with
+						continue;
+					}
+
+					const gNext = layout[r+1].id;
 					let pair;
-					if (r+1 < layout.length) { // we need a next glyph to have a pair to work with
-						const gNext = layout[r+1].id;
 
-						// get pairValueRecord, either from format 1 or format 2
-						if (subtable.format === 1) {
-							const coverageIndex = coverageIndexForGlyph(subtable.coverage, g); // is glyph g covered by this subtable?
-							if (coverageIndex !== -1) {
-								const pairSet = subtable.pairSets[coverageIndex];
-								if (pairSet) {
-									for (let i=0; i<pairSet.length; i++) {
-										if (pairSet[i].secondGlyph === gNext) {
-											pair = pairSet[i].pair;
-											break;
-										}
-									}	
+					// get pairValueRecord, either from format 1 or format 2
+					if (subtable.format === 1) {
+						const coverageIndex = coverageIndexForGlyph(subtable.coverage, g); // is glyph g covered by this subtable?
+						if (coverageIndex !== -1) {
+							const pairSet = subtable.pairSets[coverageIndex];
+							if (pairSet) {
+								for (let i=0; i<pairSet.length; i++) {
+									if (pairSet[i].secondGlyph === gNext) {
+										pair = pairSet[i].pair;
+										break;
+									}
 								}	
-							}
+							}	
 						}
-						else if (subtable.format === 2) {
-							// find the pairValueRecord for this class pair
-							const class1 = findClassForGlyph(g, subtable.classDef1);
-							const class2 = findClassForGlyph(gNext, subtable.classDef2);
-							pair = subtable.pairValueRecords[class1][class2];
-						}
+					}
+					else if (subtable.format === 2) {
+						// find the pairValueRecord for this class pair
+						const class1 = findClassForGlyph(g, subtable.classDef1);
+						const class2 = findClassForGlyph(gNext, subtable.classDef2);
+						pair = subtable.pairValueRecords[class1][class2];
+					}
 
-						// what shall we do about it?
-						if (pair) {
-							// handle adjustments specified in pairValueRecord[0]
-							// - adjusts positions of the current glyph and subsequent glyphs, maybe the input format should be simpler so we calculate absolute positions at the end?
-							if (pair[0]) {
-
-								const metrics0 = [ pair[0][0], pair[0][1], pair[0][2], pair[0][3] ]; // take the first 4 (of 8) items
-								//const metrics1 = [ pair[1][0], pair[1][1], pair[1][2], pair[1][3] ];
-
-								// add variation deltas if they exist
-								if (this.deltaSets["GDEF"]) {
-									for (let m=0; m<4; m++) {
-										const variationIndexOffset = pair[0][4+m];
-										if (variationIndexOffset) {
-											buf.seek(subtable.offset + variationIndexOffset);
-											const outer = buf.u16, inner = buf.u16, deltaFormat = buf.u16; // read variationIndex
-											if (deltaFormat === 0x8000) {
-												metrics0[m] += this.deltaSets["GDEF"][outer][inner];
-											}
+					// if we got a pair, what shall we do with it?
+					if (pair) {
+						// handle adjustments specified in pairValueRecord[0]
+						// - adjusts positions of the current glyph and subsequent glyphs, maybe the input format should be simpler so we calculate absolute positions at the end?
+						if (pair[0]) {
+							const metrics = [ pair[0][0], pair[0][1], pair[0][2], pair[0][3] ]; // get the static metrics, the first 4 (of 8) items in the array
+							if (this.deltaSets["GDEF"]) { // add variation deltas if they exist
+								for (let m=0; m<4; m++) {
+									const variationIndexOffset = pair[0][4+m];
+									if (variationIndexOffset) {
+										buf.seek(subtable.offset + variationIndexOffset);
+										const outer = buf.u16, inner = buf.u16, deltaFormat = buf.u16; // read variationIndex
+										if (deltaFormat === 0x8000) {
+											metrics[m] += this.deltaSets["GDEF"][outer][inner];
 										}
 									}
 								}
-								layoutItem.ax += metrics0[0]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
-								layoutItem.ay += metrics0[1]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
+							}
+							layoutItem.ax += metrics[0]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
+							layoutItem.ay += metrics[1]; // I don’t think this happens very much... if so, does it shift the advance location too, or just the current visible glyph?
 
-								// if the current glyph’s advance has changed, we move all *subsequent* glyphs by the change
-								// - this is inefficient, we need to just edit glyphs on their own
-								if (metrics0[2] || metrics0[3]) {
-									layoutItem.dx += metrics0[2];
-									layoutItem.dy += metrics0[3];
-									for (let r_ = r+1; r_ < layout.length; r_++) {
-										layout[r_].ax += metrics0[2];
-										layout[r_].ay += metrics0[3];
-									}
+							// if the current glyph’s advance has changed, we move all *subsequent* glyphs by the change
+							// - this is inefficient, we need to just edit glyphs on their own
+							if (metrics[2] || metrics[3]) {
+								layoutItem.dx += metrics[2];
+								layoutItem.dy += metrics[3];
+								for (let r_ = r+1; r_ < layout.length; r_++) {
+									layout[r_].ax += metrics[2];
+									layout[r_].ay += metrics[3];
 								}
 							}
-
-							// TODO: handle adjustments specified in pair[1]
-							if (pair[1]) {
-								// do stuff here
-							}
-
-							// we can quit the loop
-							found = true;
 						}
+
+						// TODO: handle adjustments specified in pair[1]
+						if (pair[1]) {
+							const metrics = [ pair[1][0], pair[1][1], pair[1][2], pair[1][3] ]; // get the static metrics, the first 4 (of 8) items in the array
+
+							// TODO: handle adjustments to the second glyph of the pair (seems like almost all fonts touch only the first glyph)
+						}
+
+						// we can quit the loop
+						found = true;
 					}
 				}
 
