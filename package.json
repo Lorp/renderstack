@@ -1,19 +1,20 @@
 {
-  "name": "RenderStack",
-  "version": "1.0.0",
-  "author": "Laurence Penney <lorp@lorp.org>",
-  "homepage": "https://github.com/Lorp/renderrater/",
-  "description": "Render variable fonts using multiple rendering engines: the browser’s own, Samsa, Fontkit, Harfbuzz.",
-  "scripts": {
-    "build": "cp src/hb.wasm dist && npx parcel build src/index.html --no-cache --public-url '.'"
-  },
-  "dependencies": {
-    "fontkit": "^2.0.0",
-    "harfbuzzjs": "^0.3.3",
-    "samsa-core": "^2.0.0"
-  },
-  "devDependencies": {
-    "path-browserify": "^1.0.1",
-    "process": "^0.11.10"
-  }
+	"name": "RenderStack",
+	"version": "1.0.0",
+	"author": "Laurence Penney <lorp@lorp.org>",
+	"homepage": "https://github.com/Lorp/renderrater/",
+	"description": "Render variable fonts using multiple rendering engines: the browser’s own, Samsa, Fontkit, Harfbuzz.",
+	"scripts": {
+		"build": "cp src/hb.wasm dist && npx parcel build src/index.html --no-cache --public-url '.'"
+	},
+	"dependencies": {
+		"fontkit": "^2.0.0",
+		"brotli": "^1.3.3",
+		"harfbuzzjs": "^0.3.3",
+		"samsa-core": "^2.0.4"
+	},
+	"devDependencies": {
+		"path-browserify": "^1.0.1",
+		"process": "^0.11.10"
+	}
 }
